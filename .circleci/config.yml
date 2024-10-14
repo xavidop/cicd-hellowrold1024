@@ -34,4 +34,9 @@ jobs:
 workflows:
   my-workflow:
     jobs:
-      - hello-job
+      - hello-job:
+          name: hello-job1
+      - hello-job:
+          name: hello-job2
+          requires:
+            - hello-job1
