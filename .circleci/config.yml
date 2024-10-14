@@ -38,5 +38,5 @@ workflows:
           name: hello-job1
       - hello-job:
           name: hello-job2
-          requires:
-            - hello-job1
+          # requires:
+          #   - hello-job1
