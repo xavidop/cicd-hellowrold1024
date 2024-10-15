@@ -26,7 +26,35 @@ jobs:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
+      - persist_to_workspace:
+          root: ~/repo
+          paths: .
 
+  deploy:
+    working_directory: ~/repo
+    docker:
+    - image: cimg/node:20.5.1
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > ~/repo/.npmrc
+      - run:
+          name: Pack package
+          command: npm pack
+      - run:
+          name: Publish package
+          command: npm publish --dry run
+      - store_artifacts:
+          path: ~/repo/my-awesome-package-1.1.0.tgz
+          destination: package/release.tgz
+      - store_artifacts:
+          path: ~/repo/dist
+          destination: dist
+      - store_artifacts:
+          path: ~/repo/docs
+          destination: docs
 
 workflows:
   test-deploy:
@@ -35,3 +63,6 @@ workflows:
           filters:
             branches:
               only: main
+      - deploy:
+          requires:
+            - test
