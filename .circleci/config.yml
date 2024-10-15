@@ -1,70 +1,30 @@
 version: 2.1
 
-executors:
-  node:
-    docker:
-      - image: cimg/node:17.2.0 # the primary container, where your job's commands are run
-
-commands:
-  curl:
-    parameters:
-      url:
-        type: string
-        default: "hettps://circleci.com"
-    steps:
-      - run: curl << parameters.url >>
-
-  # A command named `echo` that runs the `echo` command
-  echo:
-    parameters:
-      message:
-        type: string
-        default: "hello world"
-    steps:
-      - run: echo << parameters.message >>
-
 jobs:
-  hello-job:
-    executor: node # use the `node` executor defined above
+  test:
+    working_directory: ~/repo
+    docker:
+    - image: cimg/node:20.5.1
     steps:
-      - checkout # check out the code in the project directory
-      - echo: # run the `echo` command
-          message: "Hello, world!" # pass the `message` parameter to the `echo` command
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
 
-  hello-job-setter:
-    executor: node # use the `node` executor defined above
-    steps:
-      - run: echo "hello world" > hello.txt && exit 1
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
-          # taken to be the root directory of the workspace.
-          root: .
-          # Must be relative path from root
+      - run: npm install
+      - run:
+          name: Run lint
+          command: npm run lint:report
+
+      - save_cache:
           paths:
-            - ./
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
 
-  hello-job-getter:
-    executor: node # use the `node` executor defined above
-    steps:
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: .
-      - run: |
-          if [[ `cat hello.txt` == "hello world" ]]; then
-            echo "It worked!";
-          else
-            echo "Nope!"; exit 1
-          fi
 
 workflows:
-  my-workflow:
+  test-deploy:
     jobs:
-      - hello-job:
-          name: hello-job1
-      - hello-job:
-          name: hello-job2
-      - hello-job-setter
-      - hello-job-getter:
-          requires:
-            - hello-job-setter
+      - test
