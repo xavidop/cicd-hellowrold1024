@@ -65,9 +65,6 @@ workflows:
     jobs:
       - test:
           context: SonarCloud
-          filters:
-            branches:
-              only: main
       - deploy:
           requires:
             - test
